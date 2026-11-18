@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Simple power menu for Hyprland (wofi)
+set -euo pipefail
+
+choice="$(printf '%s\n' Lock Logout Suspend Reboot Shutdown \
+    | wofi --dmenu --prompt Power --width 260 --height 300 --cache-file /dev/null)" || exit 0
+
+case "$choice" in
+    Lock)     pidof hyprlock >/dev/null || hyprlock ;;
+    Logout)   hyprctl dispatch 'hl.dsp.exit()' ;;
+    Suspend)  loginctl lock-session; systemctl suspend ;;
+    Reboot)   systemctl reboot ;;
+    Shutdown) systemctl poweroff ;;
+esac

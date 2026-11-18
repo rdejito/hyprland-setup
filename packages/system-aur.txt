@@ -1,0 +1,17 @@
+# Full snapshot of AUR/foreign packages on the machine this repo was
+# captured from (2026-11-18). For reference only.
+# Generated with: pacman -Qqem
+
+ai.storyteller.artcraft-launcher
+ai.storyteller.deckcraft
+ai.storyteller.gridcraft
+ai.storyteller.wordcraft
+brave-bin
+catppuccin-cursors-mocha
+catppuccin-gtk-theme-mocha
+nvidia-580xx-dkms
+nvidia-580xx-utils
+paru
+paru-debug
+spotify
+vscodium-bin

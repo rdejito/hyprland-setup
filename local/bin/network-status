@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Waybar network indicator: signal-bars icon with a readable tooltip.
+set -u
+
+jesc() {
+    local s=$1
+    s=${s//\\/\\\\}
+    s=${s//\"/\\\"}
+    printf '%s' "$s"
+}
+
+if ! nmcli -t -f RUNNING general 2>/dev/null | grep -q '^running$'; then
+    printf '{"text":"\\uf071","tooltip":"NetworkManager is not running","class":"disconnected"}\n'
+    exit 0
+fi
+
+wifi_state=$(nmcli -t -f WIFI general 2>/dev/null | cut -d: -f2)
+wifi_dev=$(nmcli -t -f DEVICE,TYPE,STATE device status 2>/dev/null |
+    awk -F: '$2=="wifi" && $3=="connected"{print $1; exit}')
+eth_dev=$(nmcli -t -f DEVICE,TYPE,STATE device status 2>/dev/null |
+    awk -F: '$2=="ethernet" && $3=="connected"{print $1; exit}')
+
+if [ -n "${wifi_dev:-}" ]; then
+    ssid=$(nmcli -t -f GENERAL.CONNECTION device show "$wifi_dev" 2>/dev/null | cut -d: -f2-)
+    [ -z "${ssid:-}" ] && ssid="Wi-Fi"
+    sig=$(nmcli -t -f IN-USE,SIGNAL dev wifi list 2>/dev/null | awk -F: '$1=="*"{print $2; exit}')
+    sig=${sig:-0}
+    ip=$(nmcli -g IP4.ADDRESS device show "$wifi_dev" 2>/dev/null | head -1 | cut -d/ -f1)
+    cls=wifi
+    [ "$sig" -lt 40 ] && cls=wifi-weak
+    tip="$(jesc "$ssid")\\n${sig}% signal"
+    [ -n "${ip:-}" ] && tip="${tip}\\n$(jesc "$ip")"
+    printf '{"text":"\\uf012","tooltip":"%s","class":"%s"}\n' "$tip" "$cls"
+elif [ -n "${eth_dev:-}" ]; then
+    ip=$(nmcli -g IP4.ADDRESS device show "$eth_dev" 2>/dev/null | head -1 | cut -d/ -f1)
+    tip="Ethernet"
+    [ -n "${ip:-}" ] && tip="${tip}\\n$(jesc "$ip")"
+    printf '{"text":"\\uf6ff","tooltip":"%s","class":"ethernet"}\n' "$tip"
+elif [ "${wifi_state:-}" = "disabled" ]; then
+    printf '{"text":"\\uf071","tooltip":"Wi-Fi is off","class":"disconnected"}\n'
+else
+    printf '{"text":"\\uf071","tooltip":"Disconnected","class":"disconnected"}\n'
+fi

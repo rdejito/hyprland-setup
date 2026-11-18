@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# Wi-Fi launcher menu for the Waybar network indicator.
+# Run with --print to dump the generated menu without opening wofi.
+set -u
+
+notify() {
+    command -v notify-send >/dev/null 2>&1 && notify-send -a "Wi-Fi" "$@"
+}
+
+# wofi runs with allow_markup=true, so escape pango markup characters.
+esc() {
+    local s=$1
+    s=${s//&/&amp;}
+    s=${s//</&lt;}
+    s=${s//>/&gt;}
+    printf '%s' "$s"
+}
+
+wifi_state=$(nmcli -t -f WIFI general 2>/dev/null | cut -d: -f2)
+wifi_dev=$(nmcli -t -f DEVICE,TYPE,STATE device status 2>/dev/null |
+    awk -F: '$2=="wifi" && $3=="connected"{print $1; exit}')
+active_ssid=$(nmcli -t -f ACTIVE,SSID dev wifi list 2>/dev/null | awk -F: '$1=="yes"{print $2; exit}')
+
+declare -A action=()
+lines=()
+add() {
+    lines+=("$1")
+    action["$1"]="$2"
+}
+
+if [ "$wifi_state" = "enabled" ]; then
+    add "  Turn Wi-Fi off" "wifi-off"
+else
+    add "  Turn Wi-Fi on" "wifi-on"
+fi
+
+if [ -n "${active_ssid:-}" ]; then
+    add "  Disconnect from $(esc "$active_ssid")" "disconnect"
+fi
+add "  Network settings" "settings"
+lines+=("────────────────────────")
+
+if [ "$wifi_state" = "enabled" ]; then
+    # nmcli reports one row per access point; keep the best row per SSID.
+    declare -A sig_of=() sec_of=() use_of=()
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        inuse=${line%%:*}
+        rest=${line#*:}
+        security=${rest##*:}
+        rest=${rest%:*}
+        signal=${rest##*:}
+        ssid=${rest%:*}
+        [ -z "$ssid" ] && continue
+
+        cur_use=${use_of[$ssid]:-}
+        cur_sig=${sig_of[$ssid]:--1}
+        if [ "$inuse" = "*" ] && [ "$cur_use" != "*" ]; then
+            :
+        elif [ "$cur_use" = "*" ] && [ "$inuse" != "*" ]; then
+            continue
+        elif [ "$signal" -le "$cur_sig" ]; then
+            continue
+        fi
+        sig_of[$ssid]=$signal
+        sec_of[$ssid]=$security
+        use_of[$ssid]=$inuse
+    done < <(nmcli -t --escape no -f IN-USE,SSID,SIGNAL,SECURITY dev wifi list 2>/dev/null)
+
+    while IFS=$'\t' read -r inuse signal security ssid; do
+        [ -z "$ssid" ] && continue
+        if [ "$inuse" = "*" ]; then
+            add "$(printf '\uf00c')  $(esc "$ssid")   ${signal}%" "noop"
+        else
+            lock=""
+            [ -n "$security" ] && [ "$security" != "--" ] && lock="  $(printf '\uf023')"
+            add "   $(esc "$ssid")   ${signal}%${lock}" "connect|$ssid|$security"
+        fi
+    done < <(for ssid in "${!sig_of[@]}"; do
+        printf '%s\t%s\t%s\t%s\n' "${use_of[$ssid]}" "${sig_of[$ssid]}" "${sec_of[$ssid]}" "$ssid"
+    done | sort -t$'\t' -k1,1r -k2,2nr)
+fi
+
+if [ "${1:-}" = "--print" ]; then
+    printf '%s\n' "${lines[@]}"
+    exit 0
+fi
+
+choice=$(printf '%s\n' "${lines[@]}" |
+    wofi --dmenu --show dmenu --prompt "Wi-Fi" --width 460 --height 520) || exit 0
+[ -z "${choice:-}" ] && exit 0
+
+act=${action["$choice"]:-}
+case "$act" in
+    wifi-off)
+        nmcli radio wifi off && notify "Wi-Fi turned off"
+        ;;
+    wifi-on)
+        nmcli radio wifi on && notify "Wi-Fi turned on"
+        ;;
+    disconnect)
+        nmcli device disconnect "$wifi_dev" && notify "Disconnected from $active_ssid"
+        ;;
+    settings)
+        nm-connection-editor >/dev/null 2>&1 &
+        ;;
+    noop | "")
+        ;;
+    connect\|*)
+        IFS='|' read -r _ ssid security <<<"$act"
+        if [ -n "$security" ] && [ "$security" != "--" ]; then
+            kitty -e sh -c 'nmcli --ask device wifi connect "$0"; printf "\nPress any key to close..."; read -rn1' "$ssid"
+        elif nmcli device wifi connect "$ssid" >/dev/null 2>&1; then
+            notify "Connected to $ssid"
+        else
+            notify "Could not connect to $ssid"
+        fi
+        ;;
+esac

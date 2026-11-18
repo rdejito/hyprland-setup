@@ -1,0 +1,8 @@
+# Local backups produced by install.sh
+.hyprland-setup-backup-*/
+
+# Editor / OS cruft
+*.swp
+*~
+.DS_Store
+Thumbs.db

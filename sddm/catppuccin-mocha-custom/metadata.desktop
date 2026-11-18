@@ -1,0 +1,16 @@
+[SddmGreeterTheme]
+Name=Catppuccin Mocha Nocturne
+Description=Modern glass greeter with ambient glow, oversized clock, and Catppuccin Mocha palette
+Author=Sanjeev Premi (original maya components), redesigned locally
+Copyright=(c) 2016, Sanjeev Premi
+License=CC-BY-SA
+Type=sddm-theme
+Version=2.0
+Website=https://github.com/catppuccin/catppuccin
+Screenshot=screenshots/nocturne.png
+MainScript=Main.qml
+ConfigFile=theme.conf
+TranslationsDirectory=translations
+Email=
+Theme-Id=catppuccin-mocha-custom
+Theme-API=2.0

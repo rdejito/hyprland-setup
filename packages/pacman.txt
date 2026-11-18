@@ -1,0 +1,86 @@
+# Official (pacman) packages used by this Hyprland setup.
+# One package per line; blank lines and lines starting with '#' are ignored.
+# Install with:  ./install.sh --packages   (or sudo pacman -S --needed ...)
+
+# --- Hyprland ecosystem ---
+hyprland
+hypridle
+hyprlock
+hyprpaper
+hyprsunset
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+xdg-utils
+polkit-kde-agent
+
+# --- Session / login / networking ---
+sddm
+uwsm
+networkmanager
+network-manager-applet
+wpa_supplicant
+bluez
+bluez-utils
+
+# --- Audio (PipeWire) ---
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-jack
+wireplumber
+gst-plugin-pipewire
+pavucontrol
+
+# --- Bar, launcher, notifications, terminal ---
+waybar
+wofi
+dunst
+kitty
+
+# --- Qt / GTK theming ---
+qt6ct
+qt6-wayland
+qt5-wayland
+gtk3
+gtk4
+
+# --- Screenshots, clipboard, hardware keys ---
+grim
+slurp
+flameshot
+wl-clipboard
+cliphist
+brightnessctl
+ddcutil
+playerctl
+jq
+
+# --- Fonts ---
+ttf-jetbrains-mono-nerd
+noto-fonts
+noto-fonts-emoji
+
+# --- Shell and base tools ---
+zsh
+nvm
+git
+base-devel
+sudo
+fastfetch
+htop
+neovim
+vim
+nano
+wget
+firefox
+dolphin
+flatpak
+
+# --- Optional system extras ---
+cups
+cups-pk-helper
+system-config-printer
+smartmontools
+zram-generator
+efibootmgr
+ufw
